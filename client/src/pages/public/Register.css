@@ -22,3 +22,4 @@
 @keyframes modal-pop-in{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:480px){.registration-success-modal{padding:39px 22px 25px}.registration-success-modal>p:not(.registration-modal-kicker){font-size:13px}}
 @media(prefers-reduced-motion:reduce){.registration-modal-backdrop,.registration-success-modal{animation:none}}
+.register-header-actions{display:flex;align-items:center;gap:16px}.register-language-select{height:30px;padding:0 7px;border:1px solid #d2deea;border-radius:5px;background:#fff;color:#45617f;font:500 11px 'DM Sans',Arial,sans-serif}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

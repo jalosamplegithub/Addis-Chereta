@@ -81,3 +81,4 @@
 .linkedin-mark{font-size:11px}
 .youtube-mark{font-size:10px}
 @media(max-width:580px){.auction-home{padding-bottom:78px}.auction-footer{min-height:72px;display:grid;grid-template-columns:1fr;justify-items:center;gap:7px;padding:9px 12px}.auction-footer>span:first-child{font-size:7px}.footer-social{gap:13px}.footer-social>span{display:inline;font-size:8px}.footer-social a{width:22px;height:22px}.footer-tagline{display:none}}
+.language-control{display:flex;align-items:center;gap:7px;color:#4386db;margin-right:44px}.language-select{max-width:130px;border:0;background:transparent;color:inherit;font:inherit;font-size:10px;cursor:pointer;outline-offset:3px}.language-select option{color:#26374c}

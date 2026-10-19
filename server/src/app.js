@@ -3,7 +3,11 @@ import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import authRoutes from "./modules/auth/authRoutes.js";
+import procurementRoutes from "./modules/procurement/procurementRoutes.js";
+import publicAuctionRoutes from "./modules/procurement/publicAuctionRoutes.js";
 import pool from "./config/db.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 dotenv.config();
 
@@ -16,6 +20,10 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: "1mb" }));
+app.use("/uploads", (req, res, next) => {
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+}, express.static(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../uploads"), { fallthrough: false, maxAge: "1h" }));
 
 app.get("/api/health", async (req, res) => {
   try {
@@ -34,6 +42,8 @@ app.get("/api/health", async (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/auctions", publicAuctionRoutes);
+app.use("/api/procurement", procurementRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
