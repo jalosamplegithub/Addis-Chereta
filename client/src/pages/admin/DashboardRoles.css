@@ -1,0 +1,13 @@
+.admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.admin-role-picker{margin:0 0 25px}
+.admin-role-picker .admin-role-picker-heading{display:flex;align-items:center;justify-content:space-between;margin:0 0 11px;padding:0;background:none}
+.admin-role-picker-heading p{margin:3px 0 0;color:#8798aa;font-size:10px}
+.admin-role-picker-heading>button{display:flex;align-items:center;gap:9px;padding:7px 10px;border:1px solid #dce6f0;border-radius:5px;background:#fff;color:#58728e;font:inherit;font-size:10px;cursor:pointer}
+.admin-role-picker-heading>button b{color:#3479d2}
+.admin-role-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important;margin:0!important}
+.admin-role-grid>button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:75px;padding:10px 12px;border:1px solid #e1e9f1;border-radius:6px;background:#f9fbfd;color:#4d6680;text-align:left;cursor:pointer;transition:border-color .15s,background .15s}
+.admin-role-grid>button:hover,.admin-role-grid>button.selected,.admin-role-picker-heading>button.selected{border-color:#81aee0;background:#f0f6ff}
+.admin-role-grid>button>span{font-size:10px;font-weight:600}
+.admin-role-grid>button>b{font-size:18px;line-height:1.2;color:#294b70}
+.admin-role-grid>button>small{font-size:8px;color:#8a9aac}
+@media(max-width:650px){.admin-stat-grid{grid-template-columns:1fr}.admin-role-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.admin-role-picker .admin-role-picker-heading{align-items:flex-start;gap:8px}}

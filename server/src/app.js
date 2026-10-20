@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import authRoutes from "./modules/auth/authRoutes.js";
 import procurementRoutes from "./modules/procurement/procurementRoutes.js";
 import publicAuctionRoutes from "./modules/procurement/publicAuctionRoutes.js";
+import adminRoutes from "./modules/admin/adminRoutes.js";
 import pool from "./config/db.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,8 +16,22 @@ const app = express();
 
 app.use(helmet());
 
+const allowedClientOrigins = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+
 app.use(cors({
-  origin: process.env.CLIENT_URL,
+  origin(origin, callback) {
+    if (!origin || allowedClientOrigins.includes(origin)) return callback(null, true)
+
+    // Vite may use localhost, 127.0.0.1, or a different port during development.
+    if (process.env.NODE_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(origin)) {
+      return callback(null, true)
+    }
+
+    return callback(new Error('Origin is not allowed by CORS.'))
+  },
 }));
 
 app.use(express.json({ limit: "1mb" }));
@@ -44,6 +59,7 @@ app.get("/api/health", async (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/auctions", publicAuctionRoutes);
 app.use("/api/procurement", procurementRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

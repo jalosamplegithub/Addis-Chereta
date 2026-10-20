@@ -43,27 +43,29 @@ const removeFile = (url) => {
 const valuesFromBody = (body) => ({
   title: String(body.title || '').trim(),
   description: String(body.description || '').trim(),
+  listingIntent: String(body.listingIntent || '').trim(),
   vehicleType: String(body.vehicleType || '').trim(),
   lotNumber: String(body.lotNumber || '').trim(),
   initialPrice: Number(body.initialPrice),
-  minimumIncrement: Number(body.minimumIncrement),
+  // Kept at the database minimum for compatibility with older auction_items schemas.
+  minimumIncrement: 1,
   maximumPrice: body.maximumPrice === '' || body.maximumPrice == null ? null : Number(body.maximumPrice),
   startsAt: body.startsAt,
   endsAt: body.endsAt,
   status: ['published', 'closed', 'cancelled'].includes(body.status) ? body.status : 'draft',
 })
 const validate = (item) => {
-  if (!item.title || item.title.length > 180 || !item.description || !item.vehicleType || item.vehicleType.length > 100 || !item.lotNumber || item.lotNumber.length > 60) return 'Enter a title, description, vehicle type, and lot number.'
-  if (!Number.isFinite(item.initialPrice) || item.initialPrice < 0 || !Number.isFinite(item.minimumIncrement) || item.minimumIncrement <= 0) return 'Enter a valid starting price and a minimum increment greater than zero.'
-  if (item.maximumPrice !== null && (!Number.isFinite(item.maximumPrice) || item.maximumPrice < item.initialPrice)) return 'Maximum price must be greater than or equal to the initial price.'
+  if (!item.title || item.title.length > 180 || !item.description || !item.listingIntent || item.listingIntent.length > 180 || !item.vehicleType || item.vehicleType.length > 100 || !item.lotNumber || item.lotNumber.length > 60) return 'Enter a listing label of up to 180 characters, title, description, vehicle type, and lot number.'
+  if (!Number.isFinite(item.initialPrice) || item.initialPrice < 0) return 'Enter a valid initial price.'
+  if (!Number.isFinite(item.maximumPrice) || item.maximumPrice < item.initialPrice) return 'Maximum price must be greater than or equal to the initial price.'
   const start = Date.parse(item.startsAt)
   const end = Date.parse(item.endsAt)
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 'Choose a valid end date and time after the start date.'
   return null
 }
 const publicItem = (row) => ({
-  id: row.id, title: row.title, description: row.description, vehicleType: row.vehicle_type,
-  lotNumber: row.lot_number, initialPrice: row.initial_price, minimumIncrement: row.minimum_increment,
+  id: row.id, title: row.title, description: row.description, listingIntent: row.listing_intent || 'sell', vehicleType: row.vehicle_type,
+  lotNumber: row.lot_number, initialPrice: row.initial_price,
   maximumPrice: row.maximum_price, startsAt: row.starts_at, endsAt: row.ends_at,
   status: row.status, photoUrl: row.photo_path, documentUrl: row.document_path,
   documentName: row.document_name, createdAt: row.created_at, updatedAt: row.updated_at,
@@ -170,6 +172,54 @@ router.get('/auctions', async (req, res) => {
   }
 })
 
+router.get('/activity', async (req, res) => {
+  try {
+    await pool.query(
+      "UPDATE auction_items SET status='closed',updated_at=NOW() WHERE created_by=$1 AND status='published' AND ends_at<=NOW()",
+      [req.user.sub],
+    )
+    const { rows } = await pool.query(
+      `SELECT a.id,a.title,a.listing_intent,a.vehicle_type,a.lot_number,a.status,
+              a.starts_at,a.ends_at,a.photo_path,a.created_at,
+              COUNT(b.id)::int AS bidder_count,
+              COALESCE(jsonb_agg(jsonb_build_object(
+                'username',b.bidder_username,
+                'email',b.bidder_email,
+                'submittedAt',b.created_at
+              ) ORDER BY b.created_at DESC) FILTER (WHERE b.id IS NOT NULL),'[]'::jsonb) AS bidders
+       FROM auction_items a
+       LEFT JOIN auction_bids b ON b.auction_item_id=a.id
+       WHERE a.created_by=$1
+       GROUP BY a.id
+       ORDER BY a.created_at DESC,a.id DESC`,
+      [req.user.sub],
+    )
+    res.json({ items: rows })
+  } catch (error) {
+    console.error('Could not load procurement auction activity:', error.message)
+    res.status(500).json({ error: 'Could not load bidder activity for your auction items.' })
+  }
+})
+
+router.patch('/auctions/:id/public', async (req, res) => {
+  if (typeof req.body?.isPublic !== 'boolean') {
+    return res.status(400).json({ error: 'Choose whether this auction should be public.' })
+  }
+  try {
+    const status = req.body.isPublic ? 'published' : 'draft'
+    const { rows } = await pool.query(
+      `UPDATE auction_items SET status=$1, updated_at=NOW()
+       WHERE id=$2 AND created_by=$3 RETURNING *`,
+      [status, req.params.id, req.user.sub],
+    )
+    if (!rows.length) return res.status(404).json({ error: 'Auction item not found or not owned by this procurement account.' })
+    res.json({ message: req.body.isPublic ? 'Auction is now public.' : 'Auction has been unpublished.', item: publicItem(rows[0]) })
+  } catch (error) {
+    console.error('Could not change auction visibility:', error.message)
+    res.status(500).json({ error: 'Could not change auction visibility.' })
+  }
+})
+
 router.post('/auctions', uploadsMiddleware, async (req, res) => {
   const item = valuesFromBody(req.body)
   const invalid = validate(item)
@@ -181,9 +231,9 @@ router.post('/auctions', uploadsMiddleware, async (req, res) => {
   const document = req.files?.document?.[0]
   try {
     const { rows } = await pool.query(
-      `INSERT INTO auction_items (title, description, vehicle_type, lot_number, initial_price, minimum_increment, maximum_price, starts_at, ends_at, status, photo_path, document_path, document_name, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
-      [item.title, item.description, item.vehicleType, item.lotNumber, item.initialPrice, item.minimumIncrement, item.maximumPrice, item.startsAt, item.endsAt, item.status, fileUrl(photo), fileUrl(document), document?.originalname || null, req.user.sub],
+      `INSERT INTO auction_items (title, description, listing_intent, vehicle_type, lot_number, initial_price, minimum_increment, maximum_price, starts_at, ends_at, status, photo_path, document_path, document_name, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+      [item.title, item.description, item.listingIntent, item.vehicleType, item.lotNumber, item.initialPrice, item.minimumIncrement, item.maximumPrice, item.startsAt, item.endsAt, item.status, fileUrl(photo), fileUrl(document), document?.originalname || null, req.user.sub],
     )
     res.status(201).json({ item: publicItem(rows[0]) })
   } catch (error) {
@@ -214,9 +264,9 @@ router.put('/auctions/:id', uploadsMiddleware, async (req, res) => {
     const nextDocument = fileUrl(document) || old.document_path
     const nextDocumentName = document?.originalname || old.document_name
     const { rows } = await pool.query(
-      `UPDATE auction_items SET title=$1, description=$2, vehicle_type=$3, lot_number=$4, initial_price=$5, minimum_increment=$6, maximum_price=$7, starts_at=$8, ends_at=$9, status=$10, photo_path=$11, document_path=$12, document_name=$13, updated_at=NOW()
-       WHERE id=$14 AND created_by=$15 RETURNING *`,
-      [item.title, item.description, item.vehicleType, item.lotNumber, item.initialPrice, item.minimumIncrement, item.maximumPrice, item.startsAt, item.endsAt, item.status, nextPhoto, nextDocument, nextDocumentName, req.params.id, req.user.sub],
+      `UPDATE auction_items SET title=$1, description=$2, listing_intent=$3, vehicle_type=$4, lot_number=$5, initial_price=$6, minimum_increment=$7, maximum_price=$8, starts_at=$9, ends_at=$10, status=$11, photo_path=$12, document_path=$13, document_name=$14, updated_at=NOW()
+       WHERE id=$15 AND created_by=$16 RETURNING *`,
+      [item.title, item.description, item.listingIntent, item.vehicleType, item.lotNumber, item.initialPrice, item.minimumIncrement, item.maximumPrice, item.startsAt, item.endsAt, item.status, nextPhoto, nextDocument, nextDocumentName, req.params.id, req.user.sub],
     )
     if (photo) removeFile(old.photo_path)
     if (document) removeFile(old.document_path)

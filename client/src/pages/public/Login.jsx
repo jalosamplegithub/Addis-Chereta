@@ -30,7 +30,8 @@ export default function Login() {
     setSubmitting(true)
     try {
       const user = await login({ username, password })
-      navigate(user.role === 'procurement' ? '/procurement/dashboard' : '/')
+      const returnTo = new URLSearchParams(window.location.search).get('returnTo')
+      navigate(user.role === 'admin' ? '/admin/dashboard' : user.role === 'procurement' ? '/procurement/dashboard' : returnTo?.startsWith('/auctions/') ? returnTo : '/')
     } catch (loginError) {
       setError(loginError.message)
     } finally {

@@ -1,0 +1,16 @@
+.admin-account-dropdown{width:300px;max-width:calc(100vw - 26px);padding:0;overflow:hidden;border:1px solid #e0e8f0;border-radius:7px;background:#fff;box-shadow:0 10px 28px #20344c24;backdrop-filter:blur(8px)}
+.admin-dropdown-header{min-height:64px;padding:10px 13px;display:flex;align-items:center;gap:10px;background:#174b42;color:#fff}
+.admin-dropdown-header .admin-avatar{width:38px;height:38px;background:#e5f2ee;color:#256a58}
+.admin-dropdown-header>span:last-child{display:flex;flex-direction:column;gap:2px}
+.admin-dropdown-header b{font-size:11px;color:#fff}
+.admin-dropdown-header small{font-size:9px;color:#d1e2dc}
+.admin-menu-group{padding:11px 10px 9px;border-bottom:1px solid #e5e9ed}
+.admin-menu-group>p{margin:0 0 5px;padding:0 1px;color:#727c88;font-size:8px;letter-spacing:.45px;font-weight:700}
+.admin-account-dropdown .admin-menu-group button,.admin-menu-role{width:100%;min-height:35px;display:flex;align-items:center;gap:10px;padding:6px 3px;border:0;border-radius:4px;background:transparent;color:#34424f;text-decoration:none;text-align:left;font:500 10px 'DM Sans',Arial,sans-serif;cursor:pointer}
+.admin-menu-group button:hover{background:#edf3f2}
+.admin-menu-group button svg,.admin-menu-role svg{color:#596a79;flex:none}
+.admin-menu-role{color:#647180;cursor:default}
+.admin-menu-logout{padding:8px 10px}
+.admin-account-dropdown .admin-menu-logout button{width:100%;display:flex;align-items:center;gap:9px;padding:7px 2px;border:0;background:transparent;color:#dd4545;text-align:left;font:500 10px 'DM Sans',Arial,sans-serif;cursor:pointer}
+.admin-menu-logout button:hover{background:#fff2f1}
+@media(max-width:650px){.admin-account-dropdown{width:280px}.admin-dropdown-header{padding:9px 11px}.admin-account-dropdown .admin-menu-group button,.admin-menu-role{min-height:33px}}
